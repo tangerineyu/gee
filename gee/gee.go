@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-type HandlerFunc func(w http.ResponseWriter, req *http.Request)
+type HandlerFunc func(c *Context)
 type Engine struct {
 	router    map[string]HandlerFunc
 	Handle404 HandlerFunc
@@ -33,14 +33,15 @@ func (engine *Engine) Run(addr string) (err error) {
 	return http.ListenAndServe(addr, engine)
 }
 func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	key := req.Method + "-" + req.URL.Path
+	c := newContext(w, req)
+	key := c.Method + "-" + c.Path
 	if handler, ok := engine.router[key]; ok {
-		handler(w, req)
+		handler(c)
 	} else {
 		if engine.Handle404 != nil {
-			engine.Handle404(w, req)
+			engine.Handle404(c)
 		} else {
-			fmt.Fprintf(w, "404 Not Found")
+			fmt.Fprintf(w, "404 Not Found: %s\n", c.Path)
 		}
 	}
 }
