@@ -19,6 +19,11 @@ func main() {
 	r.GET("/html", func(c *gee.Context) {
 		c.HTML(http.StatusOK, "<h1>Hello Gee</h1>")
 	})
-
+	r.GET("/hello/:name", func(c *gee.Context) {
+		c.String(http.StatusOK, "hello %s, you're at %s\n", c.Params["name"], c.Path)
+	})
+	r.GET("/hello/go", func(c *gee.Context) {
+		c.String(http.StatusOK, "hello go")
+	})
 	r.Run(":9999")
 }
