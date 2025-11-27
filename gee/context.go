@@ -14,6 +14,8 @@ type Context struct {
 	Method     string
 	StatusCode int
 	Params     map[string]string
+	handlers   []HandlerFunc //middleware
+	index      int           //middleware index,执行到第几个函数
 }
 
 func newContext(w http.ResponseWriter, req *http.Request) *Context {
@@ -22,6 +24,14 @@ func newContext(w http.ResponseWriter, req *http.Request) *Context {
 		Req:    req,
 		Path:   req.URL.Path,
 		Method: req.Method,
+		index:  -1, //初始化为-1,因为Next会先自增
+	}
+}
+func (c *Context) Next() {
+	c.index++
+	s := len(c.handlers)
+	for ; c.index < s; c.index++ {
+		c.handlers[c.index](c)
 	}
 }
 func (c *Context) PostForm(key string) string {
