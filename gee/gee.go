@@ -6,13 +6,18 @@ import (
 )
 
 type HandlerFunc func(w http.ResponseWriter, req *http.Request)
-
 type Engine struct {
-	router map[string]HandlerFunc
+	router    map[string]HandlerFunc
+	Handle404 HandlerFunc
 }
 
 func New() *Engine {
-	return &Engine{router: make(map[string]HandlerFunc)}
+	return &Engine{
+		router: make(map[string]HandlerFunc),
+	}
+}
+func (engine *Engine) SetNotFound(handler HandlerFunc) {
+	engine.Handle404 = handler
 }
 func (engine *Engine) addRoute(method string, pattern string, handler HandlerFunc) {
 	key := method + "-" + pattern
@@ -32,6 +37,10 @@ func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if handler, ok := engine.router[key]; ok {
 		handler(w, req)
 	} else {
-		fmt.Fprintf(w, "404 Not Found")
+		if engine.Handle404 != nil {
+			engine.Handle404(w, req)
+		} else {
+			fmt.Fprintf(w, "404 Not Found")
+		}
 	}
 }

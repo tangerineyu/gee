@@ -17,5 +17,10 @@ func main() {
 			fmt.Fprintf(w, "Header[%q] = %q\n", k, v)
 		}
 	})
+	r.SetNotFound(func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.WriteHeader(404)
+		fmt.Fprintf(w, "<h1>404 Not Found</h1>")
+	})
 	r.Run(":9999")
 }
