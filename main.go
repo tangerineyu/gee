@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"gee/gee"
+	"html/template"
 	"log"
 	"net/http"
 	"time"
@@ -18,6 +19,16 @@ func Logger() gee.HandlerFunc {
 		log.Printf("[%d] %s in %v", c.StatusCode, c.Req.RequestURI, time.Since(t))
 	}
 }
+
+type Student struct {
+	Name string
+	Age  int8
+}
+
+func FormatAsDate(t time.Time) string {
+	year, month, day := t.Date()
+	return fmt.Sprintf("%d-%02d-%02d", year, month, day)
+}
 func OnlyForV2() gee.HandlerFunc {
 	return func(c *gee.Context) {
 		log.Println("only for v2 正在检查权限...,Auth passed")
@@ -26,9 +37,15 @@ func OnlyForV2() gee.HandlerFunc {
 }
 func main() {
 	r := gee.New()
+	r.SetFuncMap(template.FuncMap{
+		"formatDate": FormatAsDate,
+	})
+	r.LoadHTMLGlob("templates/*")
+	r.Static("/assets", "./static")
+
 	r.Use(Logger())
 	r.GET("/", func(c *gee.Context) {
-		c.String(http.StatusOK, "hello gee")
+		c.HTML(http.StatusOK, "css.tmpl", nil)
 	})
 	v1 := r.Group("/v1")
 	{

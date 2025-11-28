@@ -16,6 +16,7 @@ type Context struct {
 	Params     map[string]string
 	handlers   []HandlerFunc //middleware
 	index      int           //middleware index,执行到第几个函数
+	engine     *Engine
 }
 
 func newContext(w http.ResponseWriter, req *http.Request) *Context {
@@ -72,10 +73,12 @@ func (c *Context) Data(code int, data []byte) {
 	c.Status(code)
 	c.Writer.Write(data)
 }
-func (c *Context) HTML(code int, html string) {
+func (c *Context) HTML(code int, name string, data interface{}) {
 	c.SetHeader("Content-Type", "text/html")
 	c.Status(code)
-	c.Writer.Write([]byte(html))
+	if err := c.engine.htmlTemplates.ExecuteTemplate(c.Writer, name, nil); err != nil {
+		c.String(500, error.Error(err))
+	}
 }
 func (c *Context) Param(key string) string {
 	value, _ := c.Params[key]

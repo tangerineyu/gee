@@ -1,7 +1,9 @@
 package gee
 
 import (
+	"html/template"
 	"net/http"
+	"path"
 	"strings"
 )
 
@@ -16,9 +18,11 @@ type Engine struct {
 	//Engine可以看作是一个特殊的RouterGroup，它没有prefix属性，
 	//可以调用所有RouterGroup的方法
 	*RouterGroup
-	router    *router
-	groups    []*RouterGroup
-	Handle404 HandlerFunc
+	router        *router
+	groups        []*RouterGroup
+	htmlTemplates *template.Template
+	funcMap       template.FuncMap
+	Handle404     HandlerFunc
 }
 
 func New() *Engine {
@@ -29,6 +33,29 @@ func New() *Engine {
 		c.String(http.StatusNotFound, "404 NOT FOUND: %s\n", c.Path)
 	}
 	return engine
+}
+func (engine *Engine) SetFuncMap(funcMap template.FuncMap) {
+	engine.funcMap = funcMap
+}
+func (engine *Engine) LoadHTMLGlob(pattern string) {
+	engine.htmlTemplates = template.Must(template.New("").Funcs(engine.funcMap).ParseGlob(pattern))
+}
+func (group *RouterGroup) createStaticHandler(relativePath string, fs http.FileSystem) HandlerFunc {
+	absolutePath := path.Join(group.prefix, relativePath)
+	fileServer := http.StripPrefix(absolutePath, http.FileServer(fs))
+	return func(c *Context) {
+		file := c.Param("filepath")
+		if _, err := fs.Open(file); err != nil {
+			c.Status(http.StatusNotFound)
+			return
+		}
+		fileServer.ServeHTTP(c.Writer, c.Req)
+	}
+}
+func (group *RouterGroup) Static(relativePath string, root string) {
+	handler := group.createStaticHandler(relativePath, http.Dir(root))
+	urlPattern := path.Join(relativePath, "/*filepath")
+	group.GET(urlPattern, handler)
 }
 func (group *RouterGroup) Group(prefix string) *RouterGroup {
 	engine := group.engine
@@ -68,6 +95,6 @@ func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 	c := newContext(w, req)
 	c.handlers = middlewares
-
+	c.engine = engine
 	engine.router.handle(c)
 }
