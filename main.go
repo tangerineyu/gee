@@ -9,6 +9,11 @@ import (
 	"time"
 )
 
+type Student struct {
+	Name string
+	Age  int8
+}
+
 // 一个中间件logger
 func Logger() gee.HandlerFunc {
 	return func(c *gee.Context) {
@@ -19,12 +24,6 @@ func Logger() gee.HandlerFunc {
 		log.Printf("[%d] %s in %v", c.StatusCode, c.Req.RequestURI, time.Since(t))
 	}
 }
-
-type Student struct {
-	Name string
-	Age  int8
-}
-
 func FormatAsDate(t time.Time) string {
 	year, month, day := t.Date()
 	return fmt.Sprintf("%d-%02d-%02d", year, month, day)
@@ -67,5 +66,10 @@ func main() {
 			c.String(http.StatusOK, "hello v2")
 		})
 	}
+	r.GET("/panic", func(c *gee.Context) {
+		names := []string{"geektutu"}
+		// 故意数组越界，这会触发 panic
+		c.String(http.StatusOK, names[100])
+	})
 	r.Run(":9999")
 }

@@ -34,6 +34,13 @@ func New() *Engine {
 	}
 	return engine
 }
+
+func Default() *Engine {
+	engine := New()
+	engine.Use(Recovery())
+	return engine
+}
+
 func (engine *Engine) SetFuncMap(funcMap template.FuncMap) {
 	engine.funcMap = funcMap
 }
